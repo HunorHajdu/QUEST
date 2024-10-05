@@ -66,25 +66,23 @@ def select_subdataset(subdatasets):
         except ValueError:
             print("Invalid input. Please enter a number.")
 
-def create_output_directories(selected_subdataset):
+def create_output_directories(selected_subdataset, sub_dir):
     """
     Creates necessary output directories for image extraction and PDF conversion.
 
     :param selected_subdataset: Name of the selected sub-dataset.
+    :param sub_dir: Path to the current subdirectory being processed.
     :return: Dictionary of output directories.
     """
     output_dirs = {}
-    # Base output directory for the selected sub-dataset
-    sub_output_base = os.path.join(base_datasets_dir, selected_subdataset)
-    
     # Create train, val, test directories
     for split, subdir in image_output_subdirs.items():
-        path = os.path.join(sub_output_base, subdir)
+        path = os.path.join(sub_dir, subdir)
         os.makedirs(path, exist_ok=True)
         output_dirs[split] = path
     
     # Create PDF images directory
-    pdf_images_path = os.path.join(sub_output_base, pdf_output_subdir)
+    pdf_images_path = os.path.join(sub_dir, pdf_output_subdir)
     os.makedirs(pdf_images_path, exist_ok=True)
     output_dirs['pdf_images'] = pdf_images_path
     
@@ -109,6 +107,7 @@ def extract_images_from_parquet(parquet_file, split, output_dir):
         for idx, row in df.iterrows():
             try:
                 # Adjust the column access based on your actual data structure
+                # Assuming 'image' column contains a dictionary with 'bytes' key
                 image_bytes = row['image']['bytes']  # Replace 'image' and 'bytes' if different
                 image = Image.open(io.BytesIO(image_bytes)).convert('RGB')  # Ensure image is in RGB format
 
@@ -147,6 +146,22 @@ def convert_pdf_to_images(pdf_file, output_dir, dpi=300):
                 print(f"\nFailed to save page {page_num} of {pdf_file}: {e}")
             finally:
                 pbar.update(1)
+
+def is_directory_processed(output_dirs):
+    """
+    Checks if the output directories already contain images.
+
+    :param output_dirs: Dictionary of output directories.
+    :return: True if all output directories contain at least one image, False otherwise.
+    """
+    for split, dir_path in output_dirs.items():
+        if split == 'pdf_images':
+            if not any(fname.lower().endswith(('.png', '.jpg', '.jpeg')) for fname in os.listdir(dir_path)):
+                return False
+        else:
+            if not any(fname.lower().endswith(('.png', '.jpg', '.jpeg')) for fname in os.listdir(dir_path)):
+                return False
+    return True
 
 def process_parquet_files(selected_dir, output_dirs):
     """
@@ -194,9 +209,45 @@ def process_pdf_files(selected_dir, output_dirs):
         pdf_path = os.path.join(selected_dir, filename)
         convert_pdf_to_images(pdf_path, output_dirs['pdf_images'], dpi=pdf_dpi)
 
-# ------------------------------
-# Main Execution
-# ------------------------------
+def process_subdirectories(selected_subdataset):
+    """
+    Processes all subdirectories within the selected sub-dataset.
+
+    :param selected_subdataset: Name of the selected sub-dataset.
+    """
+    subdataset_dir = os.path.join(base_datasets_dir, selected_subdataset)
+    # List all immediate subdirectories
+    subdirs = [d for d in os.listdir(subdataset_dir) if os.path.isdir(os.path.join(subdataset_dir, d))]
+    
+    if not subdirs:
+        print(f"No subdirectories found in '{subdataset_dir}'. Processing the main subdataset directory.")
+        subdirs = [subdataset_dir]
+    else:
+        print(f"Found {len(subdirs)} subdirectories in '{selected_subdataset}'.")
+    
+    for subdir in subdirs:
+        subdir_path = os.path.join(subdataset_dir, subdir)
+        print(f"\nProcessing subdirectory: {subdir}")
+        
+        # Create output directories for this subdirectory
+        output_dirs = create_output_directories(selected_subdataset, subdir_path)
+        
+        # Check if this subdirectory has already been processed
+        if is_directory_processed(output_dirs):
+            print(f"Subdirectory '{subdir}' has already been processed. Skipping.")
+            continue
+        else:
+            print(f"Subdirectory '{subdir}' has not been processed. Starting processing.")
+        
+        # Process .parquet files
+        print("Starting image extraction from .parquet files...")
+        process_parquet_files(subdir_path, output_dirs)
+        print("Completed image extraction from .parquet files.\n")
+        
+        # Process PDF files
+        print("Starting PDF to image conversion...")
+        process_pdf_files(subdir_path, output_dirs)
+        print("Completed PDF to image conversion.\n")
 
 def main():
     print("=== Dataset Image Extraction and PDF Conversion Script ===\n")
@@ -211,21 +262,8 @@ def main():
     selected_subdataset = select_subdataset(subdatasets)
     print(f"\nSelected Sub-dataset: {selected_subdataset}\n")
     
-    # Step 3: Create necessary output directories
-    output_dirs = create_output_directories(selected_subdataset)
-    
-    # Path to the selected sub-dataset directory
-    selected_dir = os.path.join(base_datasets_dir, selected_subdataset)
-    
-    # Step 4: Extract images from .parquet files
-    print("Starting image extraction from .parquet files...")
-    process_parquet_files(selected_dir, output_dirs)
-    print("Completed image extraction from .parquet files.\n")
-    
-    # Step 5: Convert PDF files to images
-    print("Starting PDF to image conversion...")
-    process_pdf_files(selected_dir, output_dirs)
-    print("Completed PDF to image conversion.\n")
+    # Step 3: Process all subdirectories within the selected sub-dataset
+    process_subdirectories(selected_subdataset)
     
     print("All tasks completed successfully.")
 
