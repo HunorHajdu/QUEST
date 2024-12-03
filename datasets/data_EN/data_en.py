@@ -5,7 +5,7 @@ from data_cleaner.data_cleaner import DataCheckers
 
 class DataEN:
    def __init__(self):
-       self.hf_data = load_dataset("")
+       self.hf_data = load_dataset("aharley/rvl_cdip")
        self.pdf_directory = "./datasets/data_EN/"
        
        local_images = []
