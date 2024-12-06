@@ -5,7 +5,7 @@ from local_datasets.data_cleaner.data_cleaner import DataCheckers
 from tqdm import tqdm
 
 class DataEN:
-    def __init__(self, limit=None):
+    def __init__(self, limit=None, split=None):
         self.hf_data = load_dataset("aharley/rvl_cdip")
         self.pdf_directory = "./local_datasets/data_EN/"
        
@@ -21,8 +21,8 @@ class DataEN:
        
         self.data = concatenate_datasets([self.hf_data['train'], local_dataset])
 
-        if limit is not None:
-            self.data = self.data.select(range(limit))
+        if limit is not None and split is not None:
+            self.data = self.data[split].select(range(limit))
 
     def get_data(self):
         # Data check commented out due to memory issues

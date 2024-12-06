@@ -4,10 +4,11 @@ from datasets import Dataset
 from tqdm import tqdm
 
 class DataRO:
-    def __init__(self, limit=None):
+    def __init__(self, limit=None, split=None):
         self.pdf_directory = "./local_datasets/data_RO/"
         self.images = []
         self.limit = limit
+        self.split = split
 
     def create_dataset(self):
         for pdf_file in tqdm(os.listdir(self.pdf_directory), desc="Checking PDFs for DataRO"):
@@ -22,7 +23,7 @@ class DataRO:
     def get_data(self):
         data = self.create_dataset()
 
-        if self.limit is not None:
-            data = data.select(range(self.limit))
-        
+        if self.limit is not None and self.split is not None:
+            self.data = self.data[self.split].select(range(self.limit))
+
         return data

@@ -14,8 +14,8 @@ if __name__ == "__main__":
     # dataset_names = ["EN", "HU", "RO"]
     # dataset_classes = [DataEN, DataHU, DataRO]
     dataset_names = ["HU"]
-    dataset_classes = [DataHU]
     dataset_split = "train"
+    dataset_classes = [DataHU(limit=5)]
 
     ocr = OCRModel("easyocr")
     
