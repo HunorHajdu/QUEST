@@ -2,6 +2,7 @@ from local_datasets.data_EN.data_en import DataEN
 from local_datasets.data_HU.data_hu import DataHU
 from local_datasets.data_RO.data_ro import DataRO
 from ocr.ocr import OCRModel
+from ocr.post_process.post_process_ocr import OCRPostProcessor
 
 from tqdm import tqdm
 import traceback
@@ -11,6 +12,7 @@ if __name__ == "__main__":
     dataset_names = ["EN", "HU", "RO"]
     dataset_classes = [DataEN, DataHU, DataRO]
     ocr = OCRModel("easyocr")
+    ocr_post_processor = OCRPostProcessor()
 
     
     for name, cls in zip(dataset_names, dataset_classes):
@@ -33,3 +35,4 @@ if __name__ == "__main__":
     for dataset in datasets:
         for i in tqdm(range(len(dataset)), desc="Running OCR"):
             dataset[i]['detected_text'] = ocr.get_text(dataset[i]['image'])
+            dataset[i] = ocr_post_processor.post_process(dataset[i])
