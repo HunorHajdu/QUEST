@@ -7,4 +7,4 @@ class OCRPostProcessor:
         self.pipeline = pipeline('text2text-generation', model=model_name, tokenizer=tokenizer)
 
     def post_process(self, text):
-        return self.pipeline(text)
+        return self.pipeline(text)[0]['generated_text']

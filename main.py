@@ -15,14 +15,15 @@ if __name__ == "__main__":
     # dataset_classes = [DataEN, DataHU, DataRO]
     dataset_names = ["HU"]
     dataset_split = "train"
-    dataset_classes = [DataHU(limit=5)]
+    limit = 5
+    dataset_classes = [DataHU]
 
     ocr = OCRModel("easyocr")
     
     for name, cls in zip(dataset_names, dataset_classes):
         try:
             logging.info(f"Processing {name} dataset")
-            data = cls().get_data()
+            data = cls(limit=limit, split=dataset_split).get_data()
             sum = 0
             if hasattr(data, 'keys'):
                 for key in data.keys():
@@ -37,8 +38,4 @@ if __name__ == "__main__":
             traceback.print_exc()
 
     for dataset in datasets:
-        dataset[dataset_split] = dataset[dataset_split].map(ocr.apply_ocr)
-
-    for dataset in datasets:
-        for i in range(3):
-            dataset[dataset_split][i]['image'].show()
+        dataset = dataset.map(ocr.apply_ocr)

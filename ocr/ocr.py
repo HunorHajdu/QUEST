@@ -45,7 +45,15 @@ class OCRModel:
         if not isinstance(detected_text, str):
             detected_text = str(detected_text)
 
-        corrected_text = self.post_processor.post_process(detected_text)
+        detected_lines = detected_text.split('\n')
+
+        corrected_lines = []
+        for line in detected_lines:
+            corrected_line = self.post_processor.post_process(line)
+            corrected_lines.append(corrected_line)
+
+        corrected_text = '\n'.join(corrected_lines)
+
         data['detected_text'] = detected_text
         data['corrected_text'] = corrected_text
         return data
