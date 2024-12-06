@@ -14,13 +14,13 @@ if __name__ == "__main__":
     # dataset_names = ["EN", "HU", "RO"]
     # dataset_classes = [DataEN, DataHU, DataRO]
     dataset_names = ["HU"]
+    dataset_classes = [DataHU]
     dataset_split = "train"
     limit = 5
-    dataset_classes = [DataHU]
-
-    ocr = OCRModel("easyocr")
+    ocr_model = "easyocr"
     
     for name, cls in zip(dataset_names, dataset_classes):
+        ocr = OCRModel(ocr_model, language=name)
         try:
             logging.info(f"Processing {name} dataset")
             data = cls(limit=limit, split=dataset_split).get_data()

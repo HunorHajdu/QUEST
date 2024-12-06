@@ -9,11 +9,22 @@ import logging
 import numpy as np
 
 class OCRModel:
-    def __init__(self, model, post_processor=None):
-        self.post_processor = OCRPostProcessor(post_processor) if post_processor else OCRPostProcessor()
+    def __init__(self, model, language="EN"):
+        if language not in ["EN", "RO", "HU"]:
+            logging.error("Invalid language provided, using EN as default")
+            language = "EN"
+        elif language == "EN":
+            post_processor = "oliverguhr/spelling-correction-english-base"
+        elif language == "HU":
+            post_processor = "NYTK/ocr-cleaning-mt5-base-hungarian"
+        elif language == "RO":
+            post_processor = "iliemihai/mt5-base-romanian-diacritics"
+
+        self.post_processor = OCRPostProcessor(post_processor)
+
         if model is None or model.lower() == "easyocr":
             logging.warning("No OCR model provided, using EasyOCR as default")
-            self.model = easyocr.Reader(['en', 'ro', 'hu'])
+            self.model = easyocr.Reader([language.lower()])
         elif model.lower() == "trocr":
             self.processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
             self.model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
@@ -45,10 +56,9 @@ class OCRModel:
         if not isinstance(detected_text, str):
             detected_text = str(detected_text)
 
-        detected_lines = detected_text.split('\n')
 
         corrected_lines = []
-        for line in detected_lines:
+        for line in detected_text:
             corrected_line = self.post_processor.post_process(line)
             corrected_lines.append(corrected_line)
 
