@@ -5,8 +5,6 @@ from local_datasets.data_RO.data_ro import DataRO
 import traceback
 
 if __name__ == "__main__":
-    import gc
-    
     datasets = []
     dataset_names = ["EN", "HU", "RO"]
     dataset_classes = [DataEN, DataHU, DataRO]
@@ -25,7 +23,6 @@ if __name__ == "__main__":
             print(f"Total number of images in {name} dataset: {sum}")
             datasets.append(data)
             
-            gc.collect()
         except Exception as e:
             print(f"Error processing {name} dataset: {e}")
             traceback.print_exc()
