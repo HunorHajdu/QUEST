@@ -1,5 +1,5 @@
 from datasets import load_dataset
-from data_cleaner.data_cleaner import DataCheckers
+from local_datasets.data_cleaner.data_cleaner import DataCheckers
 
 class DataHU:
     def __init__(self):

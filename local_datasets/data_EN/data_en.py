@@ -1,7 +1,7 @@
 import os
 from datasets import Dataset, load_dataset, concatenate_datasets
 from pdf2image import convert_from_path
-from data_cleaner.data_cleaner import DataCheckers
+from local_datasets.data_cleaner.data_cleaner import DataCheckers
 
 class DataEN:
    def __init__(self):
