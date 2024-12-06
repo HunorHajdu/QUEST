@@ -6,6 +6,6 @@ class DataHU:
         self.data = load_dataset("nhiremath/HungarianDocQA_IT_SyntheticQA")
 
     def get_data(self):
-        self.data = DataCheckers(self.data).remove_duplicates()
-
+        # self.data = DataCheckers(self.data).remove_duplicates()
+        
         return self.data

@@ -5,7 +5,7 @@ from datasets import load_dataset
 
 class DataCheckers:
     def __init__(self, dataset):
-        self.data = dataset
+        self.data = dataset['train'] if hasattr(dataset, 'keys') else dataset
         self.imagelab = None
 
     def check_data(self):
@@ -17,6 +17,10 @@ class DataCheckers:
         if self.imagelab is None:
             logging.warning("Running check_data()!")
             self.check_data()
+        
+        if 'exact_duplicates' not in self.imagelab.info or not self.imagelab.info['exact_duplicates']['sets']:
+            logging.info("No exact duplicates found.")
+            return self.data
         
         duplicates = self.imagelab.info['exact_duplicates']['sets']
         indices_to_remove = set()
