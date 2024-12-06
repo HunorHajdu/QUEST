@@ -1,13 +1,10 @@
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer
 from transformers.pipelines.pt_utils import KeyDataset
-from datasets import load_dataset
 
 class OCRPostProcessor:
-    def __init__(self, model_name='atlijas/byt5-is-ocr-post-processing-old-texts'):
-        self.correct_ocr = pipeline('text2text-generation', model=model_name, tokenizer=model_name, num_return_sequences=1)
+    def __init__(self, model_name='google/mt5-small'):
+        tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+        self.pipeline = pipeline('text2text-generation', model=model_name, tokenizer=tokenizer)
 
-    def post_process(self, dataset, max_length=150, batch_size=32):
-        for corrected in self.correct_ocr(KeyDataset(dataset, 'text'), max_length=max_length, batch_size=batch_size):
-            dataset[corrected['key']]['detected_text'] = corrected['generated_text']
-
-        return dataset
+    def post_process(self, text):
+        return self.pipeline(text)

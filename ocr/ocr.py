@@ -3,10 +3,14 @@ import easyocr
 from paddleocr import PaddleOCR
 import keras_ocr
 
+from ocr.post_process.post_process_ocr import OCRPostProcessor
+
 import logging
+import numpy as np
 
 class OCRModel:
-    def __init__(self, model):
+    def __init__(self, model, post_processor=None):
+        self.post_processor = OCRPostProcessor(post_processor) if post_processor else OCRPostProcessor()
         if model is None or model.lower() == "easyocr":
             logging.warning("No OCR model provided, using EasyOCR as default")
             self.model = easyocr.Reader(['en', 'ro', 'hu'])
@@ -30,3 +34,18 @@ class OCRModel:
         else:
             logging.error("Invalid OCR model provided!")
             return None
+        
+    def apply_ocr(self, data):
+        image_np_array = np.array(data['image'])
+        detected_text = self.run_ocr(image_np_array)
+
+        if isinstance(detected_text, list):
+            detected_text = '\n'.join([text[1] for text in detected_text])
+
+        if not isinstance(detected_text, str):
+            detected_text = str(detected_text)
+
+        corrected_text = self.post_processor.post_process(detected_text)
+        data['detected_text'] = detected_text
+        data['corrected_text'] = corrected_text
+        return data

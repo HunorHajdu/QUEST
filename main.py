@@ -2,22 +2,26 @@ from local_datasets.data_EN.data_en import DataEN
 from local_datasets.data_HU.data_hu import DataHU
 from local_datasets.data_RO.data_ro import DataRO
 from ocr.ocr import OCRModel
-from ocr.post_process.post_process_ocr import OCRPostProcessor
 
 from tqdm import tqdm
+import numpy as np
+import logging
 import traceback
-
+    
 if __name__ == "__main__":
     datasets = []
-    dataset_names = ["EN", "HU", "RO"]
-    dataset_classes = [DataEN, DataHU, DataRO]
-    ocr = OCRModel("easyocr")
-    ocr_post_processor = OCRPostProcessor()
 
+    # dataset_names = ["EN", "HU", "RO"]
+    # dataset_classes = [DataEN, DataHU, DataRO]
+    dataset_names = ["HU"]
+    dataset_classes = [DataHU]
+    dataset_split = "train"
+
+    ocr = OCRModel("easyocr")
     
     for name, cls in zip(dataset_names, dataset_classes):
         try:
-            print(f"Processing {name} dataset...")
+            logging.info(f"Processing {name} dataset")
             data = cls().get_data()
             sum = 0
             if hasattr(data, 'keys'):
@@ -25,14 +29,18 @@ if __name__ == "__main__":
                     sum += len(data[key])
             else:
                 sum = len(data)
-            print(f"Total number of images in {name} dataset: {sum}")
+            logging.info(f"Dataset {name} has {sum} images")
             datasets.append(data)
             
         except Exception as e:
-            print(f"Error processing {name} dataset: {e}")
+            logging.error(f"Error processing {name} dataset")
             traceback.print_exc()
 
     for dataset in datasets:
-        for i in tqdm(range(len(dataset)), desc="Running OCR"):
-            dataset[i]['detected_text'] = ocr.get_text(dataset[i]['image'])
-            dataset[i] = ocr_post_processor.post_process(dataset[i])
+        dataset[dataset_split] = dataset[dataset_split].select(range(3))
+        dataset[dataset_split] = dataset[dataset_split].map(ocr.apply_ocr)
+
+    for dataset in datasets:
+        for i in range(3):
+            print(dataset[dataset_split][i]['image'])
+            dataset[dataset_split][i]['image'].show()
