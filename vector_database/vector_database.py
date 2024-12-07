@@ -1,5 +1,5 @@
 import faiss
-from embedder.embedder import Embedder
+from vector_database.embedder.embedder import Embedder
 
 class VectorDatabase:
     def __init__(self, vec_dim=512, embedder=None):
