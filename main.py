@@ -5,10 +5,10 @@ from ocr.ocr import OCRModel
 from vector_database.vector_database import VectorDatabase
 
 from tqdm import tqdm
-import numpy as np
 import logging
 import traceback
-    
+from transformers import pipeline
+
 if __name__ == "__main__":
     datasets = []
 
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     dataset_classes = [DataHU]
 
     dataset_split = "train"
-    limit = 5
+    limit = 10
 
     ocr_model = "easyocr"
     
@@ -40,11 +40,20 @@ if __name__ == "__main__":
             logging.error(f"Error processing {name} dataset")
             traceback.print_exc()
 
+    ocr_applied_datasets = []
     for dataset in datasets:
-        dataset = dataset.map(ocr.apply_ocr)
+        ocr_applied_datasets.append(dataset.map(ocr.apply_ocr))
 
-    vector_database = VectorDatabase()
-    for dataset in datasets:
-        for key in dataset.keys():
-            for text in tqdm(dataset[key]):
-                vector_database.add_vectors(text)
+    vector_database = VectorDatabase(documents=ocr_applied_datasets[0]["detected_text"])
+    
+    for text in tqdm(ocr_applied_datasets[0]["detected_text"]):
+        vector_database.add_vectors(text)
+
+    search_text = "Mit ir a dokumentumban?"
+    search_results = vector_database.search_vector(search_text)
+
+    pipeline = pipeline("text-generation", model="fQwen/Qwen2.5-1.5B-Instruct", do_sample=True)
+    prompt = f"""Answer the question: {search_text}?
+    Documents contains: {search_results[0]['text']}"""
+    generated_text = pipeline(prompt, max_new_tokens=512, num_return_sequences=1)[0]['generated_text']
+    print(generated_text)
