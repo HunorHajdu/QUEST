@@ -52,18 +52,17 @@ class OCRModel:
 
         if isinstance(detected_text, list):
             detected_text = '\n'.join([text[1] for text in detected_text])
-
         if not isinstance(detected_text, str):
             detected_text = str(detected_text)
 
-
         corrected_lines = []
-        for line in detected_text:
+        for line in detected_text.splitlines():
             corrected_line = self.post_processor.post_process(line)
             corrected_lines.append(corrected_line)
 
         corrected_text = '\n'.join(corrected_lines)
 
-        data['detected_text'] = detected_text
-        data['corrected_text'] = corrected_text
-        return data
+        return {
+            'detected_text': detected_text,
+            'corrected_text': corrected_text
+        }
