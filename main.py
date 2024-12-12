@@ -51,45 +51,50 @@ if __name__ == "__main__":
     for text in tqdm(ocr_applied_datasets[0]["detected_text"]):
         vector_database.add_vectors(text)
 
-    search_text = "Mi a mentes webcime?"
-    search_results = vector_database.search_vector(search_text)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    while True:
+        search_text = input("Enter search text: ")
 
-    prompt = (
-        f"A user searched for: '{search_text}'\n"
-        f"The search returned the following relevant results:\n {search_results[0]['text']}\n"
-    )
+        if search_text == "exit":
+            break
 
-    messages = [
-        {
-            "role": "system", 
-            "content": "You are a helpful assistant. Respond concisely and in the same language as the user's query. If the user's query is in Hungarian, respond in Hungarian. If the query is in Romanian, respond in Romanian. If the query is in English, respond in English."
-        },
-        {   "role": "user", 
-            "content": prompt
-        }
-    ]
+        search_results = vector_database.search_vector(search_text)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
-    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct").to(device)
+        prompt = (
+            f"A user searched for: '{search_text}'\n"
+            f"The search returned the following relevant results:\n {search_results[0]['text']}\n"
+        )
 
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
-    )
+        messages = [
+            {
+                "role": "system", 
+                "content": "You are a helpful assistant. Respond concisely and in the same language as the user's query. If the user's query is in Hungarian, respond in Hungarian. If the query is in Romanian, respond in Romanian. If the query is in English, respond in English."
+            },
+            {   "role": "user", 
+                "content": prompt
+            }
+        ]
 
-    inputs = tokenizer([text], return_tensors="pt")
-    inputs = inputs.to(device)
+        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
+        model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct").to(device)
 
-    outputs = model.generate(
-        inputs["input_ids"],
-        attention_mask=inputs["attention_mask"],
-        max_new_tokens=128,
-        num_return_sequences=1,
-        temperature=0.5,
-    )
+        text = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
 
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        inputs = tokenizer([text], return_tensors="pt")
+        inputs = inputs.to(device)
 
-    print(response)
+        outputs = model.generate(
+            inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
+            max_new_tokens=128,
+            num_return_sequences=1,
+            temperature=0.3,
+        )
+
+        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        print(response.split("assistant")[-1].strip())
