@@ -3,11 +3,13 @@ from local_datasets.data_HU.data_hu import DataHU
 from local_datasets.data_RO.data_ro import DataRO
 from ocr.ocr import OCRModel
 from vector_database.vector_database import VectorDatabase
-
+from transformers import RagTokenizer, RagSequenceForGeneration
 from tqdm import tqdm
 import logging
 import traceback
 from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 
 if __name__ == "__main__":
     datasets = []
@@ -18,7 +20,7 @@ if __name__ == "__main__":
     dataset_classes = [DataHU]
 
     dataset_split = "train"
-    limit = 10
+    limit = 1
 
     ocr_model = "easyocr"
     
@@ -49,11 +51,36 @@ if __name__ == "__main__":
     for text in tqdm(ocr_applied_datasets[0]["detected_text"]):
         vector_database.add_vectors(text)
 
-    search_text = "Mit ir a dokumentumban?"
+    search_text = "Mi a csak a mentes weboldala?"
     search_results = vector_database.search_vector(search_text)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    pipeline = pipeline("text-generation", model="fQwen/Qwen2.5-1.5B-Instruct", do_sample=True)
-    prompt = f"""Answer the question: {search_text}?
-    Documents contains: {search_results[0]['text']}"""
-    generated_text = pipeline(prompt, max_new_tokens=512, num_return_sequences=1)[0]['generated_text']
-    print(generated_text)
+    prompt = (
+        f"The user searched for: {search_text}\n"
+        f"The search returned the following relevant results:\n"
+    )
+    for idx, result in enumerate(search_results, 1):
+        text = result.get('text', 'No text available')
+        prompt += f"{idx}. {text}\n\n"
+    prompt += "Based on the above results, generate a helpful and informative response."
+
+    print(prompt)
+
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
+    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct").to(device)
+
+
+    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = inputs.to(device)
+
+    outputs = model.generate(
+        inputs["input_ids"],
+        attention_mask=inputs["attention_mask"],
+        max_new_tokens=512,
+        num_return_sequences=1,
+        temperature=0.7,
+    )
+
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    print(response)
