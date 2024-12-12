@@ -25,3 +25,6 @@ class VectorDatabase:
             results.append({"label": label, "distance": distance, 'vector': self.index.get_items([label])[0], 'text': self.documents[label]})        
 
         return results  
+    
+    def save(self, path):
+        self.index.save_index(path)
