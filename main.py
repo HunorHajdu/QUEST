@@ -51,34 +51,43 @@ if __name__ == "__main__":
     for text in tqdm(ocr_applied_datasets[0]["detected_text"]):
         vector_database.add_vectors(text)
 
-    search_text = "Mi a csak a mentes weboldala?"
+    search_text = "Mi a mentes webcime?"
     search_results = vector_database.search_vector(search_text)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     prompt = (
-        f"The user searched for: {search_text}\n"
-        f"The search returned the following relevant results:\n"
+        f"A user searched for: '{search_text}'\n"
+        f"The search returned the following relevant results:\n {search_results[0]['text']}\n"
     )
-    for idx, result in enumerate(search_results, 1):
-        text = result.get('text', 'No text available')
-        prompt += f"{idx}. {text}\n\n"
-    prompt += "Based on the above results, generate a helpful and informative response."
 
-    print(prompt)
+    messages = [
+        {
+            "role": "system", 
+            "content": "You are a helpful assistant. Respond concisely and in the same language as the user's query. If the user's query is in Hungarian, respond in Hungarian. If the query is in Romanian, respond in Romanian. If the query is in English, respond in English."
+        },
+        {   "role": "user", 
+            "content": prompt
+        }
+    ]
 
     tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
     model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct").to(device)
 
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
 
-    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = tokenizer([text], return_tensors="pt")
     inputs = inputs.to(device)
 
     outputs = model.generate(
         inputs["input_ids"],
         attention_mask=inputs["attention_mask"],
-        max_new_tokens=512,
+        max_new_tokens=128,
         num_return_sequences=1,
-        temperature=0.7,
+        temperature=0.5,
     )
 
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
