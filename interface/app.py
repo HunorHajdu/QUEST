@@ -83,7 +83,18 @@ def launch_app():
                     messages = [
                         {
                             "role": "system", 
-                            "content": "You are a helpful assistant. Respond concisely and in the same language as the user's query. If the user's query is in Hungarian, respond in Hungarian. If the query is in Romanian, respond in Romanian. If the query is in English, respond in English."
+                            "content": """You are a highly skilled and adaptive assistant, capable of understanding and responding to a wide range of queries. Respond to the user's requests with clear, concise, and relevant answers, maintaining a professional and friendly tone.
+
+                            Language: Automatically detect the language of the user's query and respond in that language, whether it's Hungarian, Romanian, English, or another language. If the query is in:
+
+                            -Hungarian, respond fluently in Hungarian.
+                            -Romanian, respond fluently in Romanian.
+                            -English, respond fluently in English.
+                            Contextual Understanding:
+
+                            -If the user refers to specific documents, articles, or any previous content, use that information to craft relevant and accurate responses.
+                            -Provide answers based on factual accuracy, especially when explaining or summarizing information.
+                            -Always aim for clarity, avoiding jargon, and ensuring that the response can be easily understood."""
                         },
                         {   "role": "user", 
                             "content": system_prompt
@@ -105,7 +116,7 @@ def launch_app():
                     outputs = model.generate(
                         inputs["input_ids"],
                         attention_mask=inputs["attention_mask"],
-                        max_new_tokens=128,
+                        max_new_tokens=512,
                         num_return_sequences=1,
                         temperature=0.3,
                     )
@@ -113,7 +124,7 @@ def launch_app():
                     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
                     st.write(response.split("assistant")[-1].strip())
-                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    st.session_state.messages.append({"role": "assistant", "content": response.split("assistant")[-1].strip()})
     
     else:     
         if not st.session_state.messages:
