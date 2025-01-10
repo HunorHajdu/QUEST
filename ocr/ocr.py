@@ -7,6 +7,7 @@ from ocr.post_process.post_process_ocr import OCRPostProcessor
 
 import logging
 import numpy as np
+from pdf2image import convert_from_path
 
 class OCRModel:
     def __init__(self, model, language="EN"):
@@ -62,6 +63,32 @@ class OCRModel:
 
         corrected_text = '\n'.join(corrected_lines)
 
+        return {
+            'detected_text': detected_text,
+            'corrected_text': corrected_text
+        }
+    
+    def single_file_ocr(self, pdf_path):
+        pages = convert_from_path(pdf_path)
+        detected_text = []
+        
+        for page in pages:
+            image_np_array = np.array(page)
+            page_text = self.run_ocr(image_np_array)  
+            if isinstance(page_text, list):
+                page_text = '\n'.join([text[1] for text in page_text])  
+            if not isinstance(page_text, str):
+                page_text = str(page_text)
+            
+            detected_text.append(page_text)  
+        
+        corrected_lines = []
+        for line in detected_text:
+            corrected_line = self.post_processor.post_process(line)
+            corrected_lines.append(corrected_line)
+        
+        corrected_text = '\n'.join(corrected_lines)
+        
         return {
             'detected_text': detected_text,
             'corrected_text': corrected_text

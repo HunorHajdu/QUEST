@@ -1,4 +1,9 @@
+from ocr.ocr import OCRModel
+from vector_database.vector_database import VectorDatabase
+
 import streamlit as st
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
 import tempfile
 import os
 
@@ -7,16 +12,18 @@ def initialize_session_state():
         st.session_state.messages = []
     if 'files_processed' not in st.session_state:
         st.session_state.files_processed = False
+    if 'vector_database' not in st.session_state:
+        st.session_state.vector_database = VectorDatabase() 
 
 def display_chat_message(role, content):
     with st.chat_message(role):
         st.write(content)
 
-def main():
-    st.set_page_config(page_title="Q.U.E.S.T.", layout="wide")
+def launch_app():
+    st.set_page_config(page_title="Q.U.E.S.T. – Quick Understanding and Extraction of Structured Text", layout="wide")
     initialize_session_state()
     
-    st.title("📚 Q.U.E.S.T.")
+    st.title("Q.U.E.S.T. – Quick Understanding and Extraction of Structured Text")
     
     with st.sidebar:
         st.header("Upload Documents")
@@ -32,7 +39,7 @@ def main():
         2. Wait for processing to complete
         3. Start chatting!
         """)
-        
+
         if uploaded_files and not st.session_state.files_processed:
             with st.spinner("Processing documents..."):
                 with tempfile.TemporaryDirectory() as temp_dir:
@@ -43,11 +50,19 @@ def main():
                             f.write(uploaded_file.getvalue())
                         pdf_files.append(file_path)
                     
-                    # Add the processing of the PDF file here
-                    
+                    ocr = OCRModel("easyocr", language="RO")
+
+                    ocr_applied_texts = []
+                    for pdf_file in pdf_files:
+                        ocr_applied_texts.append(ocr.single_file_ocr(pdf_file))
+
+                    for text in ocr_applied_texts[0]['detected_text']:
+                        st.session_state.vector_database.add_document(text)
+                        st.session_state.vector_database.add_vectors(text)
+
                     st.session_state.files_processed = True
                     st.success(f"✅ {len(uploaded_files)} files processed!")
-    
+        
     if st.session_state.files_processed:
         for message in st.session_state.messages:
             display_chat_message(message["role"], message["content"])
@@ -58,13 +73,49 @@ def main():
             
             with st.chat_message("assistant"):
                 with st.spinner("Thinking..."):
-                    response = "Replace this."
-                    st.write(response)
+                    search_results = st.session_state.vector_database.search_vector(prompt)
+
+                    system_prompt = (
+                        f"A user searched for: '{prompt}'\n"
+                        f"The search returned the following relevant results:\n {search_results[0]['text']}\n"
+                    )
+
+                    messages = [
+                        {
+                            "role": "system", 
+                            "content": "You are a helpful assistant. Respond concisely and in the same language as the user's query. If the user's query is in Hungarian, respond in Hungarian. If the query is in Romanian, respond in Romanian. If the query is in English, respond in English."
+                        },
+                        {   "role": "user", 
+                            "content": system_prompt
+                        }
+                    ]
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
+                    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct").to(device)
+
+                    text = tokenizer.apply_chat_template(
+                        messages,
+                        tokenize=False,
+                        add_generation_prompt=True
+                    )
+
+                    inputs = tokenizer([text], return_tensors="pt")
+                    inputs = inputs.to(device)
+
+                    outputs = model.generate(
+                        inputs["input_ids"],
+                        attention_mask=inputs["attention_mask"],
+                        max_new_tokens=128,
+                        num_return_sequences=1,
+                        temperature=0.3,
+                    )
+
+                    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+                    st.write(response.split("assistant")[-1].strip())
                     st.session_state.messages.append({"role": "assistant", "content": response})
     
-    else:
-        st.info("👆 Please upload your PDF documents in the sidebar to get started")
-        
+    else:     
         if not st.session_state.messages:
             display_chat_message("assistant", "Hello! I'm your PDF assistant. Please upload some documents to get started.")
 
@@ -72,6 +123,3 @@ def main():
         if st.sidebar.button("Clear Chat History"):
             st.session_state.messages = []
             st.rerun()
-
-if __name__ == "__main__":
-    main()

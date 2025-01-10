@@ -7,9 +7,14 @@ class VectorDatabase:
     def __init__(self, embedder=None, vec_dim=384, documents=None):
         self.embedder = Embedder(vec_dim=vec_dim) if embedder is None else embedder
         self.index = hnswlib.Index(space='cosine', dim=vec_dim)
-        self.index.init_index(max_elements=100000, ef_construction=32, M=16)
-        self.index.set_ef(16)
+        self.index.init_index(max_elements=100000, ef_construction=100, M=16)
+        self.index.set_ef(100)
         self.documents = documents
+
+    def add_document(self, text):
+        if self.documents is None:
+            self.documents = []
+        self.documents.append(text)
 
     def add_vectors(self, text):
         vectors = self.embedder.embed(text)
@@ -28,3 +33,7 @@ class VectorDatabase:
     
     def save(self, path):
         self.index.save_index(path)
+
+    def show_db(self):
+        print(self.documents)
+        print(self.index.get_items(list(range(10))))
