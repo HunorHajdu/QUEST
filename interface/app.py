@@ -49,26 +49,18 @@ def launch_app():
                     for pdf_file in pdf_files:
                         ocr_applied_texts.append(ocr.single_file_ocr(pdf_file))
 
-                    with open("ocr_results.txt", "w") as f:
-                        for ocr_applied_text in ocr_applied_texts:
-                            f.write(f"{ocr_applied_text}")
-                            f.write("\n")
-
                     for text in ocr_applied_texts:
-                        st.session_state.vector_database.add_document(text['detected_text'])
                         st.session_state.vector_database.add_vectors(text['detected_text'])
+                        st.session_state.vector_database.add_text(text['detected_text'])
 
                     st.session_state.files_processed = True
                     st.success(f"✅ {len(uploaded_files)} files processed!")
         
+        st.header("Choose a Model")
         model_name = st.selectbox(
             "Choose a model",
-            ("HuggingFaceTB/SmolLM2-1.7B-Instruct", "Qwen/Qwen2.5-3B-Instruct", "HuggingFaceTB/SmolLM2-135M-Instruct"),
+            ("HuggingFaceTB/SmolLM2-135M-Instruct", "HuggingFaceTB/SmolLM2-1.7B-Instruct", "Qwen/Qwen2.5-1.5B-Instruct", "Qwen/Qwen2.5-3B-Instruct","Qwen/Qwen2.5-7B-Instruct"),
         )
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
         
     if st.session_state.files_processed and uploaded_files:
         for message in st.session_state.messages:
@@ -108,6 +100,9 @@ def launch_app():
                         }
                     ]
 
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                    tokenizer = AutoTokenizer.from_pretrained(model_name)
+                    model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 
                     text = tokenizer.apply_chat_template(
                         messages,
