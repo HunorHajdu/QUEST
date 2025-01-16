@@ -33,13 +33,11 @@ def launch_app():
             accept_multiple_files=True,
             on_change=lambda x: st.session_state.pop("files_processed", None)
         )
-        
-        st.header("Instructions")
-        st.markdown("""
-        1. Upload your PDF documents
-        2. Wait for processing to complete
-        3. Start chatting!
-        """)
+
+        model_name = st.selectbox(
+            "Choose a model",
+            ("HuggingFaceTB/SmolLM2-1.7B-Instruct", "Qwen/Qwen2.5-1.5B-Instruct", "HuggingFaceTB/SmolLM2-135M-Instruct"),
+        )
 
         if uploaded_files and not st.session_state.files_processed:
             with st.spinner("Processing documents..."):
@@ -102,8 +100,8 @@ def launch_app():
                         }
                     ]
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
-                    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct").to(device)
+                    tokenizer = AutoTokenizer.from_pretrained(model_name)
+                    model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
 
                     text = tokenizer.apply_chat_template(
                         messages,
