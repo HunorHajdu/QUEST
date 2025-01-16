@@ -82,14 +82,14 @@ class OCRModel:
             
             detected_text.append(page_text)  
         
-        corrected_lines = []
-        for line in detected_text:
-            corrected_line = self.post_processor.post_process(line)
-            corrected_lines.append(corrected_line)
+        # corrected_lines = []
+        # for line in detected_text:
+        #     corrected_line = self.post_processor.post_process(line)
+        #     corrected_lines.append(corrected_line)
         
-        corrected_text = '\n'.join(corrected_lines)
+        # corrected_text = '\n'.join(corrected_lines)
         
         return {
-            'detected_text': detected_text,
-            'corrected_text': corrected_text
+            'detected_text': detected_text
+            # 'corrected_text': corrected_text
         }
