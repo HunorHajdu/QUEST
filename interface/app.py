@@ -30,13 +30,7 @@ def launch_app():
         uploaded_files = st.file_uploader(
             "Upload your PDF documents",
             type=['pdf'],
-            accept_multiple_files=True,
-            on_change=lambda x: st.session_state.pop("files_processed", None)
-        )
-
-        model_name = st.selectbox(
-            "Choose a model",
-            ("HuggingFaceTB/SmolLM2-1.7B-Instruct", "Qwen/Qwen2.5-1.5B-Instruct", "HuggingFaceTB/SmolLM2-135M-Instruct"),
+            accept_multiple_files=True
         )
 
         if uploaded_files and not st.session_state.files_processed:
@@ -55,14 +49,28 @@ def launch_app():
                     for pdf_file in pdf_files:
                         ocr_applied_texts.append(ocr.single_file_ocr(pdf_file))
 
-                    for text in ocr_applied_texts[0]['detected_text']:
-                        st.session_state.vector_database.add_document(text)
-                        st.session_state.vector_database.add_vectors(text)
+                    with open("ocr_results.txt", "w") as f:
+                        for ocr_applied_text in ocr_applied_texts:
+                            f.write(f"{ocr_applied_text}")
+                            f.write("\n")
+
+                    for text in ocr_applied_texts:
+                        st.session_state.vector_database.add_document(text['detected_text'])
+                        st.session_state.vector_database.add_vectors(text['detected_text'])
 
                     st.session_state.files_processed = True
                     st.success(f"✅ {len(uploaded_files)} files processed!")
         
-    if st.session_state.files_processed:
+        model_name = st.selectbox(
+            "Choose a model",
+            ("HuggingFaceTB/SmolLM2-1.7B-Instruct", "Qwen/Qwen2.5-3B-Instruct", "HuggingFaceTB/SmolLM2-135M-Instruct"),
+        )
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        
+    if st.session_state.files_processed and uploaded_files:
         for message in st.session_state.messages:
             display_chat_message(message["role"], message["content"])
         
@@ -99,9 +107,7 @@ def launch_app():
                             "content": system_prompt
                         }
                     ]
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                    tokenizer = AutoTokenizer.from_pretrained(model_name)
-                    model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+
 
                     text = tokenizer.apply_chat_template(
                         messages,
@@ -124,10 +130,10 @@ def launch_app():
 
                     st.write(response.split("assistant")[-1].strip())
                     st.session_state.messages.append({"role": "assistant", "content": response.split("assistant")[-1].strip()})
-    
     else:     
         if not st.session_state.messages:
             display_chat_message("assistant", "Hello! I'm your PDF assistant. Please upload some documents to get started.")
+        st.session_state.files_processed = False
 
     if st.session_state.messages:
         if st.sidebar.button("Clear Chat History"):
