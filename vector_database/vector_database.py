@@ -11,7 +11,7 @@ class VectorDatabase:
         self.index.set_ef(100)
         self.documents = documents
 
-    def add_document(self, text):
+    def add_text(self, text):
         if self.documents is None:
             self.documents = []
         self.documents.append(text)
