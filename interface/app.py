@@ -30,7 +30,8 @@ def launch_app():
         uploaded_files = st.file_uploader(
             "Upload your PDF documents",
             type=['pdf'],
-            accept_multiple_files=True
+            accept_multiple_files=True,
+            on_change=lambda x: st.session_state.pop("files_processed", None)
         )
         
         st.header("Instructions")
