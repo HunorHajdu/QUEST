@@ -59,7 +59,12 @@ def launch_app():
         st.header("Choose a Model")
         model_name = st.selectbox(
             "Choose a model",
-            ("HuggingFaceTB/SmolLM2-135M-Instruct", "HuggingFaceTB/SmolLM2-1.7B-Instruct", "Qwen/Qwen2.5-1.5B-Instruct", "Qwen/Qwen2.5-3B-Instruct","Qwen/Qwen2.5-7B-Instruct"),
+            ("HuggingFaceTB/SmolLM2-135M-Instruct", 
+             "HuggingFaceTB/SmolLM2-1.7B-Instruct", 
+             "Qwen/Qwen2.5-1.5B-Instruct", 
+             "Qwen/Qwen2.5-3B-Instruct",
+             "Qwen/Qwen2.5-7B-Instruct", 
+             "microsoft/phi-4"),
         )
         
     if st.session_state.files_processed and uploaded_files:
