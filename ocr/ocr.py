@@ -32,7 +32,7 @@ class OCRModel:
         elif model.lower() == "paddleocr":
             self.model = PaddleOCR()
         elif model.lower() == "kerasocr":
-            self.model = keras_ocr.pipeline.Pipeline(use_angle_cls=True)
+            self.model = keras_ocr.pipeline.Pipeline()
 
     def run_ocr(self, image):
         if isinstance(self.model, easyocr.Reader):

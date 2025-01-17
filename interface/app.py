@@ -33,6 +33,22 @@ def launch_app():
             accept_multiple_files=True
         )
 
+        st.header("Choose an OCR Model")
+        ocr_model = st.selectbox(
+                "Choose an OCR model",
+                ("easyocr", 
+                 "trocr", 
+                 "paddleocr", 
+                 "kerasocr"),
+            )
+        st.header("Choose a Language")
+        language = st.selectbox(
+                "Choose a language",
+                ("HU", 
+                 "EN",
+                 "RO"),
+            )
+
         if uploaded_files and not st.session_state.files_processed:
             with st.spinner("Processing documents..."):
                 with tempfile.TemporaryDirectory() as temp_dir:
@@ -43,7 +59,7 @@ def launch_app():
                             f.write(uploaded_file.getvalue())
                         pdf_files.append(file_path)
                     
-                    ocr = OCRModel("easyocr", language="RO")
+                    ocr = OCRModel(ocr_model, language=language)
 
                     ocr_applied_texts = []
                     for pdf_file in pdf_files:
@@ -133,6 +149,8 @@ def launch_app():
     else:     
         if not st.session_state.messages:
             display_chat_message("assistant", "Hello! I'm your PDF assistant. Please upload some documents to get started.")
+        if not uploaded_files:
+            st.session_state.messages = []
         st.session_state.files_processed = False
 
     if st.session_state.messages:
