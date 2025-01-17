@@ -80,8 +80,8 @@ def launch_app():
                     search_results = st.session_state.vector_database.search_vector(prompt)
 
                     system_prompt = (
-                        f"A user searched for: '{prompt}'\n"
-                        f"The search returned the following relevant results:\n {search_results[0]['text']}\n"
+                        f"Context: {search_results[0]['text']}\n"
+                        f"Question: '{prompt}'\n"
                     )
 
                     messages = [
